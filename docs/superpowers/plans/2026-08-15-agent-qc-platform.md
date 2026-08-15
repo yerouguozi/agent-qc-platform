@@ -2126,6 +2126,12 @@ def test_chat_json_retries_then_raises(monkeypatch):
             raise RuntimeError("boom")
 
     class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
         def post(self, *args, **kwargs):
             return FakeResponse()
 
@@ -2146,6 +2152,12 @@ def test_chat_json_parses_dict(monkeypatch):
             return {"choices": [{"message": {"content": '{"score": 5, "reason": "good"}'}}]}
 
     class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
         def post(self, *args, **kwargs):
             return FakeResponse()
 
