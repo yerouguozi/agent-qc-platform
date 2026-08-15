@@ -10,6 +10,12 @@ from app.core.db import Base, SessionLocal, engine
 from app.models import new_id
 
 
+@pytest.fixture(autouse=True)
+def _clean_db():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+
 @pytest.fixture()
 def db():
     Base.metadata.drop_all(bind=engine)
