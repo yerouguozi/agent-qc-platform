@@ -163,3 +163,17 @@ class RegressionOut(BaseModel):
     avg_score_current: float | None
     new_failures: list[str]
     rows: list[RegressionRow]
+
+
+class MetricsOverview(BaseModel):
+    trace_total: int
+    success_rate: float
+    avg_latency_ms: float
+    total_cost: float
+    last_run_pass_rate: float | None
+
+
+class TrendPoint(BaseModel):
+    day: str
+    pass_rate: float | None
+    avg_score: float | None
