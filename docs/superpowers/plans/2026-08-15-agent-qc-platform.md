@@ -919,7 +919,7 @@ class RateLimiter:
 
     def set_limit(self, agent_id: str, qps: float) -> None:
         with self._lock:
-            self._buckets[agent_id] = TokenBucket(capacity=max(1.0, qps), refill_per_sec=qps)
+            self._buckets[agent_id] = TokenBucket(capacity=qps, refill_per_sec=qps)
 
     def allow(self, agent_id: str) -> bool:
         with self._lock:
@@ -1293,7 +1293,7 @@ def test_forward_success(monkeypatch, db: Session, sample_agent):
     gateway = Gateway()
     gateway.limiter.set_limit(sample_agent.id, 100)
 
-    async def fake_client(url):
+    def fake_client(url):
         return FakeClient()
 
     monkeypatch.setattr("app.gateway.proxy.StreamableHttpMCPClient", fake_client)
@@ -1321,7 +1321,7 @@ def test_forward_timeout(monkeypatch, db: Session, sample_agent):
 
             await asyncio.sleep(5)
 
-    async def fake_client(url):
+    def fake_client(url):
         return SlowClient()
 
     monkeypatch.setattr("app.gateway.proxy.StreamableHttpMCPClient", fake_client)
@@ -1381,9 +1381,9 @@ class StreamableHttpMCPClient(MCPClient):
 
     async def list_tools(self) -> list[dict]:
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
+        from mcp.client.streamable_http import streamable_http_client
 
-        async with streamablehttp_client(self.url) as (read, write, _):
+        async with streamable_http_client(self.url) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 tools = await session.list_tools()
@@ -1394,9 +1394,9 @@ class StreamableHttpMCPClient(MCPClient):
 
     async def call_tool(self, name: str, arguments: dict) -> dict:
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
+        from mcp.client.streamable_http import streamable_http_client
 
-        async with streamablehttp_client(self.url) as (read, write, _):
+        async with streamable_http_client(self.url) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 result = await session.call_tool(name, arguments)

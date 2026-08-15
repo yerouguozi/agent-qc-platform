@@ -28,7 +28,7 @@ class RateLimiter:
 
     def set_limit(self, agent_id: str, qps: float) -> None:
         with self._lock:
-            self._buckets[agent_id] = TokenBucket(capacity=max(1.0, qps), refill_per_sec=qps)
+            self._buckets[agent_id] = TokenBucket(capacity=qps, refill_per_sec=qps)
 
     def allow(self, agent_id: str) -> bool:
         with self._lock:
