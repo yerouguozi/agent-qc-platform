@@ -3992,7 +3992,7 @@ export default function AgentsPanel() {
   const [tools, setTools] = useState<Record<string, Tool[]>>({});
 
   const refresh = () => api.listAgents().then(setAgents).catch(console.error);
-  useEffect(refresh, []);
+  useEffect(() => { refresh(); }, []);
 
   const register = async () => {
     const agent = await api.registerAgent(name, mcpUrl, qps);
@@ -4058,7 +4058,7 @@ export default function TracesPanel() {
   const [selected, setSelected] = useState<Trace | null>(null);
 
   const load = () => api.listTraces(sessionId || undefined, status || undefined).then(setTraces).catch(console.error);
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   return (
     <div>
@@ -4119,7 +4119,7 @@ export default function RunsPanel() {
   const [version, setVersion] = useState("v1");
 
   const refresh = () => api.listDatasets().then(setDatasets).catch(console.error);
-  useEffect(refresh, []);
+  useEffect(() => { refresh(); }, []);
 
   const createDataset = async () => {
     const ds = await api.createDataset(dsName, dsDesc);
@@ -4209,7 +4209,7 @@ export default function ReviewQueue() {
     api.reviewQueue().then(setItems).catch(console.error);
     api.listDatasets().then(setDatasets).catch(console.error);
   };
-  useEffect(refresh, []);
+  useEffect(() => { refresh(); }, []);
 
   const enqueue = async () => {
     await api.enqueueReview(traceId);
