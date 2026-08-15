@@ -83,3 +83,83 @@ class TraceIngestIn(BaseModel):
     cost: float = 0.0
     error_code: str | None = None
     error_message: str | None = None
+
+
+class DatasetIn(BaseModel):
+    name: str
+    description: str = ""
+
+
+class DatasetOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CaseIn(BaseModel):
+    input_prompt: str
+    expected_behavior: str = ""
+    checks: list[dict] = []
+    source_trace_id: str | None = None
+
+
+class CaseOut(CaseIn):
+    id: str
+    dataset_id: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RunIn(BaseModel):
+    dataset_id: str
+    agent_version: str
+
+
+class RunOut(BaseModel):
+    id: str
+    dataset_id: str
+    agent_version: str
+    status: str
+    started_at: datetime
+    finished_at: datetime | None
+    summary_json: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class CaseResultOut(BaseModel):
+    case_id: str
+    input_prompt: str
+    deterministic_pass: bool
+    judge_score: int | None
+    judge_reason: str | None
+    judge_degraded: bool
+    overall_pass: bool
+
+
+class RunDetailOut(RunOut):
+    results: list[CaseResultOut] = []
+
+
+class RegressionRow(BaseModel):
+    case_id: str
+    input_prompt: str
+    baseline_pass: bool | None
+    current_pass: bool | None
+    baseline_score: int | None
+    current_score: int | None
+
+
+class RegressionOut(BaseModel):
+    baseline_run_id: str
+    current_run_id: str
+    pass_rate_baseline: float
+    pass_rate_current: float
+    avg_score_baseline: float | None
+    avg_score_current: float | None
+    new_failures: list[str]
+    rows: list[RegressionRow]

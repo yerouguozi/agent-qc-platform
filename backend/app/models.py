@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime
 
@@ -86,6 +87,10 @@ class EvalCase(Base):
     checks_json = Column(Text, default="[]")
     source_trace_id = Column(String(32), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    @property
+    def checks(self) -> list:
+        return json.loads(self.checks_json or "[]")
 
 
 class EvalRun(Base):
