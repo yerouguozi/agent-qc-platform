@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: sqlite:////app/data/qc.db
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      MODEL_NAME: ${MODEL_NAME:-deepseek-v4-flash}
+      SUT_CHAT_URL: ${SUT_CHAT_URL:-}
+      SUT_AUTH_TOKEN: ${SUT_AUTH_TOKEN:-}
+      SUT_DATASET_ID: ${SUT_DATASET_ID:-}
+    volumes:
+      - qc_data:/app/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  qc_data:
