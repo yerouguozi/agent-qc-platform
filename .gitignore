@@ -5,4 +5,4 @@ __pycache__/
 .env
 *.db
 node_modules/
-dist/
+dist/*.egg-info/
