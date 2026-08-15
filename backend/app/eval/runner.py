@@ -25,7 +25,20 @@ def execute_run(db: Session, run: EvalRun, driver: AgentDriver) -> EvalRun:
         if existing is not None:
             continue
         checks = json.loads(case.checks_json or "[]")
-        output = driver.run(case.input_prompt, run.id)
+        try:
+            output = driver.run(case.input_prompt, run.id)
+        except Exception as exc:
+            db.add(
+                EvalResult(
+                    run_id=run.id,
+                    case_id=case.id,
+                    deterministic_pass=False,
+                    judge_reason=f"执行异常:{exc}",
+                    overall_pass=False,
+                )
+            )
+            db.commit()
+            continue
         deterministic_pass, _details = run_checks(checks, CaseOutput(output.answer, output.tool_calls))
         judge_score = None
         judge_reason = None

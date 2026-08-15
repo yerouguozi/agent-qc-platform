@@ -31,7 +31,7 @@ class HttpAgentDriver(AgentDriver):
         session_payload = {"title": f"eval-{run_id[:8]}"}
         if self.dataset_id:
             session_payload["dataset_id"] = self.dataset_id
-        with httpx.Client(timeout=120.0) as client:
+        with httpx.Client(timeout=120.0, trust_env=False) as client:
             session_resp = client.post(
                 f"{self.chat_url}/api/sessions",
                 json=session_payload,
