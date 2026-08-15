@@ -177,3 +177,25 @@ class TrendPoint(BaseModel):
     day: str
     pass_rate: float | None
     avg_score: float | None
+
+
+class ReviewItemIn(BaseModel):
+    trace_id: str
+
+
+class ReviewItemOut(BaseModel):
+    id: int
+    trace_id: str
+    status: str
+    reviewer_note: str | None
+    created_at: datetime
+    decided_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewDecideIn(BaseModel):
+    status: str
+    note: str = ""
+    promote_to_dataset_id: str | None = None
+    input_prompt: str | None = None
