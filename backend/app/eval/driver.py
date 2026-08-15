@@ -20,17 +20,21 @@ class MockDriver(AgentDriver):
 class HttpAgentDriver(AgentDriver):
     """调用真实 Agent 的 chat API，工具调用由 SUT 插桩上报到本平台 ingest。"""
 
-    def __init__(self, chat_url: str, auth_token: str, trace_loader):
+    def __init__(self, chat_url: str, auth_token: str, trace_loader, dataset_id: str = ""):
         self.chat_url = chat_url.rstrip("/")
         self.auth_token = auth_token
         self.trace_loader = trace_loader
+        self.dataset_id = dataset_id
 
     def run(self, prompt: str, run_id: str) -> CaseOutput:
         headers = {"Authorization": f"Bearer {self.auth_token}"}
+        session_payload = {"title": f"eval-{run_id[:8]}"}
+        if self.dataset_id:
+            session_payload["dataset_id"] = self.dataset_id
         with httpx.Client(timeout=120.0) as client:
             session_resp = client.post(
                 f"{self.chat_url}/api/sessions",
-                json={"title": f"eval-{run_id[:8]}"},
+                json=session_payload,
                 headers=headers,
             )
             session_resp.raise_for_status()
@@ -58,4 +62,5 @@ def build_driver(db, *, use_mock: bool = False):
         chat_url=settings.sut_chat_url,
         auth_token=settings.sut_auth_token,
         trace_loader=lambda sid: traces_by_session(db, sid),
+        dataset_id=settings.sut_dataset_id,
     )
