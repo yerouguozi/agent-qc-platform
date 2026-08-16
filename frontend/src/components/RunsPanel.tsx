@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { Dataset, Run, RunDetail } from "../types";
+import type { Dataset, RunDetail } from "../types";
 
 export default function RunsPanel() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -10,15 +10,29 @@ export default function RunsPanel() {
   const [checksJson, setChecksJson] = useState('[{"type":"contains","value":"正确"}]');
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [version, setVersion] = useState("v1");
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const refresh = () => api.listDatasets().then(setDatasets).catch(console.error);
+  const refresh = async () => {
+    try {
+      setError(null);
+      setDatasets(await api.listDatasets());
+    } catch (e) {
+      setError(String(e));
+    }
+  };
   useEffect(() => { refresh(); }, []);
 
   const createDataset = async () => {
-    const ds = await api.createDataset(dsName, dsDesc);
-    setDsName("");
-    setDsDesc("");
-    refresh();
+    try {
+      setError(null);
+      await api.createDataset(dsName, dsDesc);
+      setDsName("");
+      setDsDesc("");
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    }
   };
 
   const addCase = async (datasetId: string) => {
@@ -26,21 +40,35 @@ export default function RunsPanel() {
     try {
       checks = JSON.parse(checksJson);
     } catch {
-      alert("checks JSON 不合法");
+      setError("checks JSON 不合法");
       return;
     }
-    await api.addCase(datasetId, prompt, checks);
-    setPrompt("");
+    try {
+      setError(null);
+      await api.addCase(datasetId, prompt, checks);
+      setPrompt("");
+    } catch (e) {
+      setError(String(e));
+    }
   };
 
   const createAndRun = async (datasetId: string) => {
-    const run = await api.createRun(datasetId, version);
-    const done = await api.executeRun(run.id);
-    setDetail(await api.getRun(done.id));
+    setRunning(true);
+    setError(null);
+    try {
+      const run = await api.createRun(datasetId, version);
+      const done = await api.executeRun(run.id);
+      setDetail(await api.getRun(done.id));
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
     <div>
+      {error && <div className="card" style={{ borderColor: "#f53f3f", color: "#f53f3f" }}>出错了：{error}</div>}
       <div className="card">
         <h3>新建数据集</h3>
         <input placeholder="数据集名称" value={dsName} onChange={(e) => setDsName(e.target.value)} />
@@ -56,11 +84,14 @@ export default function RunsPanel() {
             <button className="btn ghost" onClick={() => addCase(ds.id)}>添加用例</button>
           </div>
           <div className="row" style={{ marginTop: 10 }}>
-            <input placeholder="Agent 版本，如 v1" value={version} onChange={(e) => setVersion(e.target.value)} />
-            <button className="btn" onClick={() => createAndRun(ds.id)}>创建并执行评测</button>
+            <input placeholder="Agent 版本，如 v1" value={version} onChange={(e) => setVersion(e.target.value)} disabled={running} />
+            <button className="btn" onClick={() => createAndRun(ds.id)} disabled={running}>
+              {running ? "评测中…（1-2 分钟）" : "创建并执行评测"}
+            </button>
           </div>
         </div>
       ))}
+      {running && <div className="card">⏳ 评测执行中，请稍候…正在跑 3 个真实业务场景</div>}
       {detail && (
         <div className="card">
           <h3>运行结果 {detail.id.slice(0, 8)}（{detail.agent_version}）</h3>
