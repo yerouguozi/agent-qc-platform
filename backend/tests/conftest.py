@@ -2,6 +2,9 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_qc.db"
 os.environ["DEEPSEEK_API_KEY"] = "test-key"
+os.environ["SUT_CHAT_URL"] = ""
+os.environ["SUT_AUTH_TOKEN"] = ""
+os.environ["SUT_DATASET_ID"] = ""
 
 import pytest
 from sqlalchemy.orm import Session

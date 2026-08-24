@@ -3,13 +3,17 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.eval.datasets import get_dataset
-from app.eval.driver import build_driver
 from app.eval.regression import compare_runs
-from app.eval.runner import execute_run
+from app.eval.tasks import start_run
 from app.models import EvalCase, EvalResult, EvalRun
 from app.schemas import CaseResultOut, RegressionOut, RunDetailOut, RunIn, RunOut
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
+
+
+@router.get("", response_model=list[RunOut])
+def list_runs(db: Session = Depends(get_db)):
+    return db.query(EvalRun).order_by(EvalRun.started_at.desc()).limit(50).all()
 
 
 @router.post("", response_model=RunOut, status_code=201)
@@ -28,8 +32,10 @@ def execute(run_id: str, db: Session = Depends(get_db)):
     run = db.get(EvalRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
-    driver = build_driver(db)
-    return execute_run(db, run, driver)
+    if run.status in ("completed", "failed"):
+        return run
+    start_run(run_id)
+    return run
 
 
 @router.get("/{run_id}", response_model=RunDetailOut)

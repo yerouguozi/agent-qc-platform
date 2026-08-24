@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { Dataset, RunDetail } from "../types";
+import type { Dataset, Run, RunDetail } from "../types";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function RunsPanel() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [runs, setRuns] = useState<Run[]>([]);
   const [dsName, setDsName] = useState("");
   const [dsDesc, setDsDesc] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -16,7 +19,9 @@ export default function RunsPanel() {
   const refresh = async () => {
     try {
       setError(null);
-      setDatasets(await api.listDatasets());
+      const [ds, rs] = await Promise.all([api.listDatasets(), api.listRuns()]);
+      setDatasets(ds);
+      setRuns(rs);
     } catch (e) {
       setError(String(e));
     }
@@ -57,14 +62,39 @@ export default function RunsPanel() {
     setError(null);
     try {
       const run = await api.createRun(datasetId, version);
-      const done = await api.executeRun(run.id);
-      setDetail(await api.getRun(done.id));
+      await api.executeRun(run.id);
+      for (;;) {
+        await sleep(2000);
+        const d = await api.getRun(run.id);
+        setDetail(d);
+        if (d.status === "completed" || d.status === "failed") break;
+      }
+      refresh();
     } catch (e) {
       setError(String(e));
     } finally {
       setRunning(false);
     }
   };
+
+  const viewRun = async (runId: string) => {
+    try {
+      setError(null);
+      setDetail(await api.getRun(runId));
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const progress = (() => {
+    if (!detail || !detail.summary_json) return null;
+    try {
+      const s = JSON.parse(detail.summary_json);
+      return { cases: s.cases ?? 0, done: s.done ?? 0 };
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <div>
@@ -86,30 +116,55 @@ export default function RunsPanel() {
           <div className="row" style={{ marginTop: 10 }}>
             <input placeholder="Agent 版本，如 v1" value={version} onChange={(e) => setVersion(e.target.value)} disabled={running} />
             <button className="btn" onClick={() => createAndRun(ds.id)} disabled={running}>
-              {running ? "评测中…（1-2 分钟）" : "创建并执行评测"}
+              {running ? "评测中…" : "创建并执行评测"}
             </button>
           </div>
         </div>
       ))}
-      {running && <div className="card">⏳ 评测执行中，请稍候…正在跑 3 个真实业务场景</div>}
-      {detail && (
+      {running && (
         <div className="card">
-          <h3>运行结果 {detail.id.slice(0, 8)}（{detail.agent_version}）</h3>
-          <table>
-            <thead><tr><th>用例</th><th>确定性</th><th>Judge 分</th><th>总体</th></tr></thead>
-            <tbody>
-              {detail.results.map((r) => (
-                <tr key={r.case_id}>
-                  <td>{r.input_prompt}</td>
-                  <td>{r.deterministic_pass ? "通过" : "失败"}</td>
-                  <td>{r.judge_score ?? "-"}</td>
-                  <td><span className={`badge ${r.overall_pass ? "ok" : "bad"}`}>{r.overall_pass ? "通过" : "失败"}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          ⏳ 评测执行中{progress ? `（${progress.done}/${progress.cases} 个用例）` : ""}…
         </div>
       )}
+      {detail && (
+        <div className="card">
+          <h3>运行结果 {detail.id.slice(0, 8)}（{detail.agent_version}）· {detail.status}</h3>
+          {detail.status === "completed" ? (
+            <table>
+              <thead><tr><th>用例</th><th>确定性</th><th>Judge 分</th><th>总体</th></tr></thead>
+              <tbody>
+                {detail.results.map((r) => (
+                  <tr key={r.case_id}>
+                    <td>{r.input_prompt}</td>
+                    <td>{r.deterministic_pass ? "通过" : "失败"}</td>
+                    <td>{r.judge_score ?? "-"}</td>
+                    <td><span className={`badge ${r.overall_pass ? "ok" : "bad"}`}>{r.overall_pass ? "通过" : "失败"}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div>执行中，已出 {detail.results.length} 个结果…</div>
+          )}
+        </div>
+      )}
+      <div className="card">
+        <h3>历史运行</h3>
+        <table>
+          <thead><tr><th>运行</th><th>版本</th><th>状态</th><th>时间</th><th></th></tr></thead>
+          <tbody>
+            {runs.map((r) => (
+              <tr key={r.id}>
+                <td>{r.id.slice(0, 8)}</td>
+                <td>{r.agent_version}</td>
+                <td>{r.status}</td>
+                <td>{r.started_at}</td>
+                <td><button className="btn ghost" onClick={() => viewRun(r.id)}>查看</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

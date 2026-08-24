@@ -69,6 +69,9 @@ def execute_run(db: Session, run: EvalRun, driver: AgentDriver) -> EvalRun:
             )
         )
         db.commit()
+        done = db.query(EvalResult).filter(EvalResult.run_id == run.id).count()
+        run.summary_json = json.dumps({"cases": len(cases), "done": done}, ensure_ascii=False)
+        db.commit()
     run.status = "completed"
     run.finished_at = datetime.utcnow()
     run.summary_json = json.dumps({"cases": len(cases)}, ensure_ascii=False)

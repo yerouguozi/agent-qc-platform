@@ -49,6 +49,7 @@ export const api = {
     request<Run>("/api/v1/runs", { method: "POST", body: JSON.stringify({ dataset_id: datasetId, agent_version: agentVersion }) }),
   executeRun: (runId: string) => request<Run>(`/api/v1/runs/${runId}/execute`, { method: "POST" }),
   getRun: (runId: string) => request<RunDetail>(`/api/v1/runs/${runId}`),
+  listRuns: () => request<Run[]>("/api/v1/runs"),
   regression: (runId: string, baseline: string) =>
     request<Regression>(`/api/v1/runs/${runId}/regression?baseline=${baseline}`),
   overview: () => request<MetricsOverview>("/api/v1/metrics/overview"),
