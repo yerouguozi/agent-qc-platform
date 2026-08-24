@@ -1,5 +1,7 @@
 # Agent 接入与质控平台（Agent Connect & QC Platform）
 
+![CI](https://github.com/yerouguozi/agent-qc-platform/actions/workflows/ci.yml/badge.svg)
+
 > 基于 MCP 的 Agent 质量管控平台:接入 → 观测 → 评测 → 治理 闭环。
 
 ## 功能特性

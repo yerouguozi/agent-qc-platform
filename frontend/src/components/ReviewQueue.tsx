@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { Dataset, ReviewItem } from "../types";
+import type { Dataset, ReviewItem, Trace } from "../types";
 
 export default function ReviewQueue() {
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [traces, setTraces] = useState<Trace[]>([]);
   const [traceId, setTraceId] = useState("");
 
   const refresh = () => {
     api.reviewQueue().then(setItems).catch(console.error);
     api.listDatasets().then(setDatasets).catch(console.error);
+    api.listTraces().then(setTraces).catch(console.error);
   };
-  useEffect(refresh, []);
+  useEffect(() => { refresh(); }, []);
 
   const enqueue = async () => {
-    await api.enqueueReview(traceId);
-    setTraceId("");
-    refresh();
+    if (!traceId) return;
+    try {
+      await api.enqueueReview(traceId);
+      setTraceId("");
+      refresh();
+    } catch (e) {
+      alert(String(e));
+    }
   };
 
   const decide = async (itemId: number, status: string) => {
@@ -38,8 +45,15 @@ export default function ReviewQueue() {
   return (
     <div>
       <div className="card row">
-        <input placeholder="Trace ID（从 Traces 页复制）" value={traceId} onChange={(e) => setTraceId(e.target.value)} />
-        <button className="btn" onClick={enqueue}>加入复核队列</button>
+        <select value={traceId} onChange={(e) => setTraceId(e.target.value)}>
+          <option value="">选择要复核的 trace…</option>
+          {traces.map((t) => (
+            <option key={t.trace_id} value={t.trace_id}>
+              {t.tool_name} · {t.status} · {t.trace_id.slice(0, 12)}…
+            </option>
+          ))}
+        </select>
+        <button className="btn" onClick={enqueue} disabled={!traceId}>加入复核队列</button>
       </div>
       <div className="card">
         <h3>复核队列</h3>
