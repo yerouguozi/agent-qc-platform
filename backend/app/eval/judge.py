@@ -14,8 +14,12 @@ _RUBRIC = (
 )
 
 
-def judge_answer(question: str, answer: str, expected_behavior: str = "") -> dict:
-    user = f"问题: {question}\n期望行为: {expected_behavior or '(未提供)'}\n回答: {answer}"
+def judge_answer(question: str, answer: str, expected_behavior: str = "", context: str = "") -> dict:
+    parts = [f"问题: {question}", f"期望行为: {expected_behavior or '(未提供)'}"]
+    if context:
+        parts.append(f"工具调用结果(可用于核验回答中的数字):\n{context[:3000]}")
+    parts.append(f"回答: {answer}")
+    user = "\n".join(parts)
     try:
         result = chat_json(_RUBRIC, user)
     except LLMError as exc:

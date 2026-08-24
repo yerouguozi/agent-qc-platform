@@ -49,7 +49,8 @@ class HttpAgentDriver(AgentDriver):
         traces = self.trace_loader(sid)
         tool_calls = [t.tool_name for t in traces]
         trace_id = traces[-1].trace_id if traces else None
-        return CaseOutput(answer=answer, tool_calls=tool_calls, trace_id=trace_id)
+        trace_summaries = [t.result_summary[:500] for t in traces]
+        return CaseOutput(answer=answer, tool_calls=tool_calls, trace_id=trace_id, trace_summaries=trace_summaries)
 
 
 def build_driver(db, *, use_mock: bool = False):

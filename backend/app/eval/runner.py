@@ -45,7 +45,12 @@ def execute_run(db: Session, run: EvalRun, driver: AgentDriver) -> EvalRun:
         judge_degraded = False
         if any(c.get("type") == "judge" for c in checks):
             try:
-                judge = judge_answer(case.input_prompt, output.answer, case.expected_behavior)
+                judge = judge_answer(
+                    case.input_prompt,
+                    output.answer,
+                    case.expected_behavior,
+                    context="\n".join(output.trace_summaries),
+                )
                 judge_score = judge["score"]
                 judge_reason = judge["reason"]
             except JudgeError:

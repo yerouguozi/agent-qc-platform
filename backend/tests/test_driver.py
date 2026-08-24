@@ -41,6 +41,7 @@ def test_http_driver_calls_sut_and_loads_traces(monkeypatch):
     class FakeTrace:
         tool_name = "query_sql"
         trace_id = "tr-1"
+        result_summary = '{"rows": 10}'
 
     driver = HttpAgentDriver(chat_url="http://sut", auth_token="tok", trace_loader=lambda sid: [FakeTrace()])
     out = driver.run("问题", "run1")

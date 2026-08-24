@@ -3,10 +3,11 @@ import re
 
 
 class CaseOutput:
-    def __init__(self, answer: str, tool_calls: list[str] | None = None, trace_id: str | None = None):
+    def __init__(self, answer: str, tool_calls: list[str] | None = None, trace_id: str | None = None, trace_summaries: list[str] | None = None):
         self.answer = answer
         self.tool_calls = tool_calls or []
         self.trace_id = trace_id
+        self.trace_summaries = trace_summaries or []
 
 
 def _resolve_path(data, path: str):

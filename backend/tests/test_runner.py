@@ -49,7 +49,7 @@ def test_judge_check_scored(db: Session, monkeypatch):
     db.commit()
     monkeypatch.setattr(
         "app.eval.runner.judge_answer",
-        lambda q, a, e: {"score": 5, "reason": "good", "issues": []},
+        lambda q, a, e, context="": {"score": 5, "reason": "good", "issues": []},
     )
     execute_run(db, run, MockDriver(answer="回答", tool_calls=[]))
     result = db.query(EvalResult).filter(EvalResult.run_id == run.id).first()
