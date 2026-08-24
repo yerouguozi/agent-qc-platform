@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { Dataset, Run, RunDetail } from "../types";
+import type { Dataset, EvalCase, Run, RunDetail } from "../types";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function RunsPanel() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [casesMap, setCasesMap] = useState<Record<string, EvalCase[]>>({});
   const [dsName, setDsName] = useState("");
   const [dsDesc, setDsDesc] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -22,6 +23,9 @@ export default function RunsPanel() {
       const [ds, rs] = await Promise.all([api.listDatasets(), api.listRuns()]);
       setDatasets(ds);
       setRuns(rs);
+      const map: Record<string, EvalCase[]> = {};
+      await Promise.all(ds.map(async (d) => { map[d.id] = await api.listCases(d.id); }));
+      setCasesMap(map);
     } catch (e) {
       setError(String(e));
     }
@@ -41,6 +45,7 @@ export default function RunsPanel() {
   };
 
   const addCase = async (datasetId: string) => {
+    if (!prompt.trim()) return;
     let checks: Record<string, unknown>[];
     try {
       checks = JSON.parse(checksJson);
@@ -52,6 +57,7 @@ export default function RunsPanel() {
       setError(null);
       await api.addCase(datasetId, prompt, checks);
       setPrompt("");
+      refresh();
     } catch (e) {
       setError(String(e));
     }
@@ -107,12 +113,19 @@ export default function RunsPanel() {
       </div>
       {datasets.map((ds) => (
         <div className="card" key={ds.id}>
-          <h3>{ds.name}（{ds.id.slice(0, 8)}）</h3>
+          <h3>{ds.name}（{ds.id.slice(0, 8)}）· 用例数：{(casesMap[ds.id] || []).length}</h3>
           <div className="row">
             <input placeholder="输入 prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
             <input placeholder="checks JSON" value={checksJson} onChange={(e) => setChecksJson(e.target.value)} />
-            <button className="btn ghost" onClick={() => addCase(ds.id)}>添加用例</button>
+            <button className="btn ghost" onClick={() => addCase(ds.id)} disabled={!prompt.trim()}>添加用例</button>
           </div>
+          {(casesMap[ds.id] || []).length > 0 && (
+            <ul style={{ fontSize: 13, color: "#4e5969" }}>
+              {(casesMap[ds.id] || []).map((c) => (
+                <li key={c.id}>{c.input_prompt.slice(0, 40)}</li>
+              ))}
+            </ul>
+          )}
           <div className="row" style={{ marginTop: 10 }}>
             <input placeholder="Agent 版本，如 v1" value={version} onChange={(e) => setVersion(e.target.value)} disabled={running} />
             <button className="btn" onClick={() => createAndRun(ds.id)} disabled={running}>
