@@ -57,6 +57,7 @@ export default function RunsPanel() {
       setError(null);
       await api.addCase(datasetId, prompt, checks);
       setPrompt("");
+      alert("已添加用例 ✅");
       refresh();
     } catch (e) {
       setError(String(e));
