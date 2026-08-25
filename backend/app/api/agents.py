@@ -25,6 +25,10 @@ def register(payload: AgentRegisterIn, db: Session = Depends(get_db)):
         mcp_url=payload.mcp_url,
         api_key_hash=hash_key(api_key),
         rate_limit_qps=payload.rate_limit_qps,
+        chat_url=payload.chat_url,
+        auth_token=payload.auth_token,
+        dataset_id=payload.dataset_id,
+        driver_type=payload.driver_type,
     )
     _limiter.set_limit(agent.id, agent.rate_limit_qps)
     out = AgentOut.model_validate(agent).model_dump()

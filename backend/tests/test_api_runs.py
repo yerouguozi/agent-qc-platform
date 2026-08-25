@@ -51,6 +51,23 @@ def test_regression_api():
     assert len(reg["rows"]) == 1
 
 
+def test_run_with_agent_id():
+    agent = client.post("/api/v1/agents/register", json={"name": "a2", "mcp_url": "http://x"}).json()
+    ds = client.post("/api/v1/datasets", json={"name": "d"}).json()
+    client.post(
+        f"/api/v1/datasets/{ds['id']}/cases",
+        json={"input_prompt": "p", "checks": [{"type": "contains", "value": "mock"}]},
+    )
+    run = client.post(
+        "/api/v1/runs",
+        json={"dataset_id": ds["id"], "agent_version": "v1", "agent_id": agent["id"]},
+    ).json()
+    assert run["agent_id"] == agent["id"]
+    client.post(f"/api/v1/runs/{run['id']}/execute")
+    done = _wait_completed(run["id"])
+    assert done["status"] == "completed"
+
+
 def test_list_runs():
     ds = client.post("/api/v1/datasets", json={"name": "d"}).json()
     client.post(

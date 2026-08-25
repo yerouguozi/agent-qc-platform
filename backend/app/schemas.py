@@ -12,12 +12,19 @@ class AgentRegisterIn(BaseModel):
     name: str
     mcp_url: str
     rate_limit_qps: int = 5
+    chat_url: str | None = None
+    auth_token: str | None = None
+    dataset_id: str | None = None
+    driver_type: str = "http"
 
 
 class AgentOut(BaseModel):
     id: str
     name: str
     mcp_url: str
+    chat_url: str | None = None
+    dataset_id: str | None = None
+    driver_type: str | None = None
     rate_limit_qps: int
     status: str
     created_at: datetime
@@ -117,12 +124,14 @@ class CaseOut(CaseIn):
 class RunIn(BaseModel):
     dataset_id: str
     agent_version: str
+    agent_id: str | None = None
 
 
 class RunOut(BaseModel):
     id: str
     dataset_id: str
     agent_version: str
+    agent_id: str | None = None
     status: str
     started_at: datetime
     finished_at: datetime | None

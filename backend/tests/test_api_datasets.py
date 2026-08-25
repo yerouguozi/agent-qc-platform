@@ -20,6 +20,16 @@ def test_create_dataset_and_case():
     assert len(client.get(f"/api/v1/datasets/{ds['id']}/cases").json()) == 1
 
 
+def test_delete_dataset_and_case():
+    ds = client.post("/api/v1/datasets", json={"name": "待删"}).json()
+    case = client.post(f"/api/v1/datasets/{ds['id']}/cases", json={"input_prompt": "p"}).json()
+    assert client.delete(f"/api/v1/datasets/{ds['id']}/cases/{case['id']}").status_code == 204
+    assert len(client.get(f"/api/v1/datasets/{ds['id']}/cases").json()) == 0
+    assert client.delete(f"/api/v1/datasets/{ds['id']}").status_code == 204
+    remaining = client.get("/api/v1/datasets").json()
+    assert all(d["id"] != ds["id"] for d in remaining)
+
+
 def test_case_on_missing_dataset():
     resp = client.post("/api/v1/datasets/nope/cases", json={"input_prompt": "p"})
     assert resp.status_code == 404

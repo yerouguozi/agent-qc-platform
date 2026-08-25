@@ -57,6 +57,7 @@ export interface Run {
   id: string;
   dataset_id: string;
   agent_version: string;
+  agent_id: string | null;
   status: string;
   started_at: string;
   finished_at: string | null;

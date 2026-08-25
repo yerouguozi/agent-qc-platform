@@ -1,0 +1,12 @@
+[
+  {"input_prompt": "我的订单什么时候能发货?", "expected_behavior": "查询订单状态并给出答复", "checks": [{"type": "contains", "value": "订单"}, {"type": "judge"}]},
+  {"input_prompt": "怎么申请退款?", "expected_behavior": "给出退款流程", "checks": [{"type": "contains", "value": "退款"}, {"type": "judge"}]},
+  {"input_prompt": "退货的运费由谁承担?", "expected_behavior": "说明退货运费规则", "checks": [{"type": "contains", "value": "运费"}, {"type": "judge"}]},
+  {"input_prompt": "可以开发票吗?怎么开?", "expected_behavior": "说明开票流程", "checks": [{"type": "contains", "value": "发票"}, {"type": "judge"}]},
+  {"input_prompt": "商品质量问题怎么处理?", "expected_behavior": "给出质量问题的处理方式", "checks": [{"type": "contains", "value": "质量"}, {"type": "judge"}]},
+  {"input_prompt": "我要人工客服,帮我转接", "expected_behavior": "转人工或给出人工渠道", "checks": [{"type": "contains", "value": "人工"}, {"type": "judge"}]},
+  {"input_prompt": "你们的客服工作时间是什么?", "expected_behavior": "说明客服时间", "checks": [{"type": "contains", "value": "客服"}, {"type": "judge"}]},
+  {"input_prompt": "怎么查我的物流信息?", "expected_behavior": "查询物流或说明方法", "checks": [{"type": "contains", "value": "物流"}, {"type": "judge"}]},
+  {"input_prompt": "商品可以换货吗?", "expected_behavior": "说明换货规则", "checks": [{"type": "contains", "value": "换货"}, {"type": "judge"}]},
+  {"input_prompt": "我的优惠券为什么用不了?", "expected_behavior": "排查优惠券问题", "checks": [{"type": "contains", "value": "优惠"}, {"type": "judge"}]}
+]

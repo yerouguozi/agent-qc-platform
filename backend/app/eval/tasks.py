@@ -25,7 +25,7 @@ def _work(run_id: str) -> None:
         run = db.get(EvalRun, run_id)
         if run is None:
             return
-        driver = build_driver(db)
+        driver = build_driver(db, run=run)
         execute_run(db, run, driver)
     except Exception:
         db.rollback()

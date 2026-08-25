@@ -17,6 +17,45 @@ class MockDriver(AgentDriver):
         return CaseOutput(answer=self.answer, tool_calls=self.tool_calls)
 
 
+class CustomerServiceDriver(AgentDriver):
+    """适配 ai-customer-service-agent:响应自带 tool_calls,无需插桩。"""
+
+    def __init__(self, chat_url: str, auth_token: str):
+        self.chat_url = chat_url.rstrip("/")
+        self.auth_token = auth_token
+
+    def run(self, prompt: str, run_id: str) -> CaseOutput:
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        with httpx.Client(timeout=120.0, trust_env=False) as client:
+            sess = client.post(
+                f"{self.chat_url}/api/sessions",
+                json={"title": f"eval-{run_id[:8]}"},
+                headers=headers,
+            )
+            sess.raise_for_status()
+            sid = sess.json()["id"]
+            resp = client.post(
+                f"{self.chat_url}/api/sessions/{sid}/messages",
+                json={"content": prompt},
+                headers=headers,
+            )
+            resp.raise_for_status()
+            msgs = resp.json()
+        if not msgs:
+            return CaseOutput(answer="", tool_calls=[])
+        last = msgs[-1]
+        answer = last.get("content", "")
+        tool_calls = []
+        for t in last.get("tool_calls") or []:
+            if isinstance(t, dict):
+                name = str(t.get("name") or t.get("tool") or "")
+                if name:
+                    tool_calls.append(name)
+            else:
+                tool_calls.append(str(t))
+        return CaseOutput(answer=answer, tool_calls=tool_calls)
+
+
 class HttpAgentDriver(AgentDriver):
     """调用真实 Agent 的 chat API，工具调用由 SUT 插桩上报到本平台 ingest。"""
 
@@ -53,11 +92,29 @@ class HttpAgentDriver(AgentDriver):
         return CaseOutput(answer=answer, tool_calls=tool_calls, trace_id=trace_id, trace_summaries=trace_summaries)
 
 
-def build_driver(db, *, use_mock: bool = False):
+def build_driver(db, run=None, *, use_mock: bool = False):
     from app.core.config import settings
+    from app.models import Agent
     from app.trace.store import traces_by_session
 
-    if use_mock or not settings.sut_chat_url:
+    if use_mock:
+        return MockDriver()
+    if run is not None and run.agent_id:
+        agent = db.get(Agent, run.agent_id)
+        if agent is not None and agent.chat_url:
+            if agent.driver_type == "customer_service":
+                return CustomerServiceDriver(
+                    chat_url=agent.chat_url,
+                    auth_token=agent.auth_token or "",
+                )
+            return HttpAgentDriver(
+                chat_url=agent.chat_url,
+                auth_token=agent.auth_token or "",
+                trace_loader=lambda sid: traces_by_session(db, sid),
+                dataset_id=agent.dataset_id or "",
+            )
+        return MockDriver()
+    if not settings.sut_chat_url:
         return MockDriver()
     return HttpAgentDriver(
         chat_url=settings.sut_chat_url,

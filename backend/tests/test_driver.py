@@ -1,4 +1,4 @@
-from app.eval.driver import CaseOutput, HttpAgentDriver, MockDriver
+from app.eval.driver import CaseOutput, CustomerServiceDriver, HttpAgentDriver, MockDriver
 
 
 def test_mock_driver():
@@ -6,6 +6,39 @@ def test_mock_driver():
     out = driver.run("问题", "run1")
     assert out.answer == "ok"
     assert out.tool_calls == ["load_dataset"]
+
+
+def test_customer_service_driver(monkeypatch):
+    class FakeResponse:
+        def __init__(self, data):
+            self._data = data
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self._data
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json=None, headers=None):
+            if url.endswith("/api/sessions"):
+                return FakeResponse({"id": "cs-1"})
+            return FakeResponse([
+                {"content": "用户问题", "tool_calls": None},
+                {"content": "订单查询结果", "tool_calls": [{"name": "query_order"}, "get_shipping"]},
+            ])
+
+    monkeypatch.setattr("app.eval.driver.httpx.Client", lambda **kwargs: FakeClient())
+    driver = CustomerServiceDriver(chat_url="http://cs", auth_token="tok")
+    out = driver.run("我的订单", "r1")
+    assert out.answer == "订单查询结果"
+    assert out.tool_calls == ["query_order", "get_shipping"]
 
 
 def test_http_driver_calls_sut_and_loads_traces(monkeypatch):

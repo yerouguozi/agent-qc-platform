@@ -5,7 +5,7 @@ from app.core.db import get_db
 from app.eval.datasets import get_dataset
 from app.eval.regression import compare_runs
 from app.eval.tasks import start_run
-from app.models import EvalCase, EvalResult, EvalRun
+from app.models import Agent, EvalCase, EvalResult, EvalRun
 from app.schemas import CaseResultOut, RegressionOut, RunDetailOut, RunIn, RunOut
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -20,7 +20,9 @@ def list_runs(db: Session = Depends(get_db)):
 def create(payload: RunIn, db: Session = Depends(get_db)):
     if get_dataset(db, payload.dataset_id) is None:
         raise HTTPException(status_code=404, detail="dataset not found")
-    run = EvalRun(dataset_id=payload.dataset_id, agent_version=payload.agent_version)
+    if payload.agent_id and db.get(Agent, payload.agent_id) is None:
+        raise HTTPException(status_code=404, detail="agent not found")
+    run = EvalRun(dataset_id=payload.dataset_id, agent_version=payload.agent_version, agent_id=payload.agent_id)
     db.add(run)
     db.commit()
     db.refresh(run)

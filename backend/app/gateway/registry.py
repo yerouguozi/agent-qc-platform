@@ -11,8 +11,21 @@ def register_agent(
     mcp_url: str,
     api_key_hash: str,
     rate_limit_qps: int = 5,
+    chat_url: str | None = None,
+    auth_token: str | None = None,
+    dataset_id: str | None = None,
+    driver_type: str = "http",
 ) -> Agent:
-    agent = Agent(name=name, mcp_url=mcp_url, api_key_hash=api_key_hash, rate_limit_qps=rate_limit_qps)
+    agent = Agent(
+        name=name,
+        mcp_url=mcp_url,
+        chat_url=chat_url,
+        auth_token=auth_token,
+        dataset_id=dataset_id,
+        driver_type=driver_type,
+        api_key_hash=api_key_hash,
+        rate_limit_qps=rate_limit_qps,
+    )
     db.add(agent)
     db.commit()
     db.refresh(agent)

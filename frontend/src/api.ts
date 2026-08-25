@@ -22,6 +22,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     const body = await resp.text();
     throw new Error(`${resp.status}: ${body.slice(0, 200)}`);
   }
+  if (resp.status === 204) return undefined as T;
   return resp.json() as Promise<T>;
 }
 
@@ -40,13 +41,20 @@ export const api = {
   createDataset: (name: string, description: string) =>
     request<Dataset>("/api/v1/datasets", { method: "POST", body: JSON.stringify({ name, description }) }),
   listCases: (datasetId: string) => request<EvalCase[]>(`/api/v1/datasets/${datasetId}/cases`),
+  deleteDataset: (datasetId: string) =>
+    request<void>(`/api/v1/datasets/${datasetId}`, { method: "DELETE" }),
+  deleteCase: (datasetId: string, caseId: string) =>
+    request<void>(`/api/v1/datasets/${datasetId}/cases/${caseId}`, { method: "DELETE" }),
   addCase: (datasetId: string, inputPrompt: string, checks: Record<string, unknown>[]) =>
     request<EvalCase>(`/api/v1/datasets/${datasetId}/cases`, {
       method: "POST",
       body: JSON.stringify({ input_prompt: inputPrompt, checks }),
     }),
-  createRun: (datasetId: string, agentVersion: string) =>
-    request<Run>("/api/v1/runs", { method: "POST", body: JSON.stringify({ dataset_id: datasetId, agent_version: agentVersion }) }),
+  createRun: (datasetId: string, agentVersion: string, agentId?: string) =>
+    request<Run>("/api/v1/runs", {
+      method: "POST",
+      body: JSON.stringify({ dataset_id: datasetId, agent_version: agentVersion, ...(agentId ? { agent_id: agentId } : {}) }),
+    }),
   executeRun: (runId: string) => request<Run>(`/api/v1/runs/${runId}/execute`, { method: "POST" }),
   getRun: (runId: string) => request<RunDetail>(`/api/v1/runs/${runId}`),
   listRuns: () => request<Run[]>("/api/v1/runs"),

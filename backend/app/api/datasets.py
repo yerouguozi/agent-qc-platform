@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.eval.datasets import add_case, create_dataset, get_dataset, list_cases, list_datasets
+from app.eval.datasets import add_case, create_dataset, delete_case, delete_dataset, get_dataset, list_cases, list_datasets
 from app.schemas import CaseIn, CaseOut, DatasetIn, DatasetOut
 
 router = APIRouter(prefix="/api/v1/datasets", tags=["datasets"])
@@ -35,3 +35,15 @@ def add(dataset_id: str, payload: CaseIn, db: Session = Depends(get_db)):
 @router.get("/{dataset_id}/cases", response_model=list[CaseOut])
 def cases(dataset_id: str, db: Session = Depends(get_db)):
     return list_cases(db, dataset_id)
+
+
+@router.delete("/{dataset_id}", status_code=204)
+def remove(dataset_id: str, db: Session = Depends(get_db)):
+    if not delete_dataset(db, dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+
+@router.delete("/{dataset_id}/cases/{case_id}", status_code=204)
+def remove_case(dataset_id: str, case_id: str, db: Session = Depends(get_db)):
+    if not delete_case(db, case_id):
+        raise HTTPException(status_code=404, detail="case not found")

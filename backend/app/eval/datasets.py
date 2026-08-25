@@ -2,7 +2,7 @@ import json
 
 from sqlalchemy.orm import Session
 
-from app.models import EvalCase, EvalDataset
+from app.models import EvalCase, EvalDataset, EvalResult, EvalRun
 
 
 def create_dataset(db: Session, name: str, description: str = "") -> EvalDataset:
@@ -19,6 +19,30 @@ def list_datasets(db: Session) -> list[EvalDataset]:
 
 def get_dataset(db: Session, dataset_id: str) -> EvalDataset | None:
     return db.get(EvalDataset, dataset_id)
+
+
+def delete_dataset(db: Session, dataset_id: str) -> bool:
+    ds = db.get(EvalDataset, dataset_id)
+    if ds is None:
+        return False
+    case_ids = [c.id for c in db.query(EvalCase).filter(EvalCase.dataset_id == dataset_id).all()]
+    if case_ids:
+        db.query(EvalResult).filter(EvalResult.case_id.in_(case_ids)).delete(synchronize_session=False)
+        db.query(EvalCase).filter(EvalCase.dataset_id == dataset_id).delete(synchronize_session=False)
+    db.query(EvalRun).filter(EvalRun.dataset_id == dataset_id).delete(synchronize_session=False)
+    db.delete(ds)
+    db.commit()
+    return True
+
+
+def delete_case(db: Session, case_id: str) -> bool:
+    case = db.get(EvalCase, case_id)
+    if case is None:
+        return False
+    db.query(EvalResult).filter(EvalResult.case_id == case_id).delete(synchronize_session=False)
+    db.delete(case)
+    db.commit()
+    return True
 
 
 def add_case(
